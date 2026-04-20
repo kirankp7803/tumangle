@@ -1,9 +1,20 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Video, User } from 'lucide-react';
+import { Video, User, Users } from 'lucide-react';
+import { socket } from '../socket';
 
 const Navbar = () => {
   const location = useLocation();
+  const [activeUsers, setActiveUsers] = useState(0);
+
+  useEffect(() => {
+    socket.on('stats_update', (data) => {
+      setActiveUsers(data.activeUsers);
+    });
+    return () => {
+      socket.off('stats_update');
+    };
+  }, []);
 
   return (
     <nav style={{
@@ -27,6 +38,9 @@ const Navbar = () => {
         </Link>
 
         <div className="flex items-center gap-4">
+          <div style={{ color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem', marginRight: '1rem', fontSize: '0.875rem', fontWeight: 500 }}>
+            <Users size={18} /> <span style={{ color: 'var(--accent-primary)' }}>{activeUsers}</span> Online
+          </div>
           <Link to="/call" className="btn btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}>
             <User size={18} /> Call Now
           </Link>

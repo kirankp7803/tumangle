@@ -17,11 +17,62 @@ const io = new Server(server, {
   }
 });
 
+let activeUsers = 0;
+let waitingQueue = [];
+
 io.on('connection', (socket) => {
-  console.log(`User Connected: ${socket.id}`);
+  activeUsers++;
+  io.emit('stats_update', { activeUsers });
+  console.log(`User Connected: ${socket.id}. Total active: ${activeUsers}`);
+
+  socket.on('find_stranger', () => {
+    // Prevent double queuing
+    waitingQueue = waitingQueue.filter(s => s.id !== socket.id);
+    
+    if (waitingQueue.length > 0) {
+      const partner = waitingQueue.shift(); // FIFO
+      const roomId = `room_${partner.id}_${socket.id}`;
+      
+      socket.join(roomId);
+      partner.join(roomId);
+      
+      socket.roomId = roomId;
+      partner.roomId = roomId;
+
+      io.to(roomId).emit('stranger_matched', { roomId });
+    } else {
+      waitingQueue.push(socket);
+      socket.emit('waiting_for_stranger');
+    }
+  });
+
+  socket.on('send_message', (data) => {
+    if (socket.roomId) {
+      socket.to(socket.roomId).emit('receive_message', data);
+    }
+  });
+
+  socket.on('end_call', () => {
+    if (socket.roomId) {
+      socket.to(socket.roomId).emit('stranger_disconnected');
+      socket.leave(socket.roomId);
+      // Let the partner know
+      io.to(socket.roomId).in(socket.roomId).socketsLeave(socket.roomId);
+      socket.roomId = null;
+    }
+    // Remove from queue if they end while waiting
+    waitingQueue = waitingQueue.filter(s => s.id !== socket.id);
+  });
 
   socket.on('disconnect', () => {
-    console.log(`User Disconnected: ${socket.id}`);
+    activeUsers--;
+    io.emit('stats_update', { activeUsers });
+    waitingQueue = waitingQueue.filter(s => s.id !== socket.id);
+    
+    if (socket.roomId) {
+      socket.to(socket.roomId).emit('stranger_disconnected');
+    }
+    console.log(`User Disconnected: ${socket.id}. Total active: ${activeUsers}`);
   });
 });
 

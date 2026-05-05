@@ -18,6 +18,8 @@ const App = () => {
   const [localStream, setLocalStream] = useState(null);
   const [remoteStream, setRemoteStream] = useState(null);
   const [genderFilter, setGenderFilter] = useState('both');
+  const [isAudioMuted, setIsAudioMuted] = useState(false);
+  const [isVideoStopped, setIsVideoStopped] = useState(false);
   
   const [messages, setMessages] = useState([{ text: "Welcome to Tumangle! Start chatting with the world.", sender: userName, isSelf: false }]);
   const [chatInput, setChatInput] = useState('');
@@ -60,6 +62,24 @@ const App = () => {
       socket.off('partner-disconnected');
     };
   }, [screen]);
+
+  const toggleAudio = () => {
+    if (localStream) {
+      localStream.getAudioTracks().forEach(track => {
+        track.enabled = !track.enabled;
+      });
+      setIsAudioMuted(!localStream.getAudioTracks()[0].enabled);
+    }
+  };
+
+  const toggleVideo = () => {
+    if (localStream) {
+      localStream.getVideoTracks().forEach(track => {
+        track.enabled = !track.enabled;
+      });
+      setIsVideoStopped(!localStream.getVideoTracks()[0].enabled);
+    }
+  };
 
   // Auto-scroll chat
   useEffect(() => {
@@ -224,8 +244,34 @@ const App = () => {
 
             {/* Local Video Frame */}
             <div className="local-video-frame" style={{ display: localStream ? 'block' : 'none' }}>
-              <video ref={localVideoRef} autoPlay playsInline muted></video>
-              <div className="local-tag">You</div>
+              <video ref={localVideoRef} autoPlay playsInline muted style={{ opacity: isVideoStopped ? 0.3 : 1 }}></video>
+              <div className="local-tag">You {isAudioMuted && '(Muted)'}</div>
+              
+              {/* Media Controls */}
+              <div className="local-media-controls">
+                <button 
+                  className={`media-btn ${isAudioMuted ? 'disabled' : ''}`} 
+                  onClick={toggleAudio} 
+                  title={isAudioMuted ? "Unmute" : "Mute"}
+                >
+                  {isAudioMuted ? (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="1" y1="1" x2="23" y2="23"></line><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"></path><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+                  ) : (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+                  )}
+                </button>
+                <button 
+                  className={`media-btn ${isVideoStopped ? 'disabled' : ''}`} 
+                  onClick={toggleVideo} 
+                  title={isVideoStopped ? "Start Video" : "Stop Video"}
+                >
+                  {isVideoStopped ? (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="1" y1="1" x2="23" y2="23"></line><path d="M21 17.16V7l-5.73 4.08-1.57-1.12L21 4.54v2.3L15.34 11M3 3.32L9.46 8H4a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h14a2 2 0 0 0 1.24-.44L20 22.42"></path></svg>
+                  ) : (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
+                  )}
+                </button>
+              </div>
             </div>
 
             {currentState === 'CONNECTED_NODE' && (

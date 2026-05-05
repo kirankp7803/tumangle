@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
 
-// Initializing socket connection
-const socket = io('https://api.tumangle.site');
+// Initializing socket connection to local Python server
+const socket = io('/'); 
+
 
 const App = () => {
   const [screen, setScreen] = useState('auth');
@@ -91,6 +92,12 @@ const App = () => {
     setRemoteStream(null);
     setCurrentState('START_NODE');
     addMessage("Call ended.", "System");
+  };
+
+  const handleCancelSearch = () => {
+    socket.emit('leave-chat'); // Use same event to clear from queue
+    setCurrentState('START_NODE');
+    addMessage("Search cancelled.", "System");
   };
 
   const addMessage = (text, sender, isSelf = false) => {
@@ -199,6 +206,13 @@ const App = () => {
               <div className={`matching-overlay ${currentState === 'SEARCHING_NODE' ? 'active' : ''}`}>
                 <div className="loader-pulse"></div>
                 <h2>Searching for a partner...</h2>
+                <button 
+                  className="btn-secondary" 
+                  style={{ marginTop: '20px', padding: '10px 30px', borderRadius: '30px' }}
+                  onClick={handleCancelSearch}
+                 >
+                   Cancel Search
+                 </button>
               </div>
 
               {currentState === 'CONNECTED_NODE' && (

@@ -1,43 +1,37 @@
-# Stage 1: Build the frontend
+# Stage 1: Build the React frontend
 FROM node:20-alpine AS frontend-builder
 WORKDIR /app
-
-# Copy package files
 COPY package*.json ./
-
-# Install all dependencies (including devDependencies for Vite)
 RUN npm install
-
-# Copy source code
 COPY . .
-
-# Build the Vite app for production
 RUN npm run build
 
-# Stage 2: Setup the production backend
-FROM node:20-alpine
+# Stage 2: Setup the Python Flask backend
+FROM python:3.13-slim
 WORKDIR /app
 
-# Install native build tools required by better-sqlite3 in alpine
-RUN apk add --no-cache python3 make g++ sqlite
+# Install system dependencies if needed
+RUN apt-get update && apt-get install -y \
+    sqlite3 \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy package files
-COPY package*.json ./
+# Copy backend requirements and install them
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Install only production dependencies
-RUN npm install --omit=dev
-
-# Copy the backend server file
-COPY server.js .
+# Copy the Python backend file and database
+COPY app.py .
+# Note: In production, you might want to use a volume for database.sqlite
+# COPY database.sqlite . 
 
 # Copy the built frontend from Stage 1
 COPY --from=frontend-builder /app/dist ./dist
 
-# Create a volume for the SQLite database so data persists across container restarts
-VOLUME ["/app/data"]
-
 # Expose the application port
 EXPOSE 3000
 
-# Start the server
-CMD ["node", "server.js"]
+# Set environment variables
+ENV FLASK_ENV=production
+
+# Start the Flask-SocketIO server
+CMD ["python", "app.py"]

@@ -1,14 +1,14 @@
 version: '3.8'
 
 services:
-  tumangle-app:
+  tumangle-app-v4:
     build: .
-    container_name: tumangle-server
+    container_name: tumangle-server-v4
     ports:
-      - "3000:3000"
+      - "3002:3000"
     environment:
-      - NODE_ENV=production
-      - DB_PATH=/app/data/database.sqlite
+      - FLASK_ENV=production
+      - PYTHONUNBUFFERED=1
     volumes:
       - tumangle_data:/app/data
     restart: unless-stopped

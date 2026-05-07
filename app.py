@@ -1,8 +1,10 @@
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit
+from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3
 import os
+import re
 
 app = Flask(__name__, static_folder='dist')
 CORS(app)
@@ -26,10 +28,21 @@ def init_db():
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 email TEXT UNIQUE NOT NULL,
                 name TEXT NOT NULL,
-                password TEXT NOT NULL
+                password_hash TEXT NOT NULL
             )
         ''')
         conn.commit()
+
+# Validation functions
+def is_valid_email(email):
+    pattern = r'^[^\s@]+@[^\s@]+\.[^\s@]+$'
+    return re.match(pattern, email) is not None
+
+def is_valid_password(password):
+    return password and len(password) >= 8
+
+def is_valid_name(name):
+    return name and len(name.strip()) >= 2
 
 init_db()
 
@@ -40,14 +53,30 @@ def signup():
     name = data.get('name')
     password = data.get('password')
     
+    if not email or not password:
+        return jsonify({"error": "Email and password are required"}), 400
+    
+    if not is_valid_email(email):
+        return jsonify({"error": "Invalid email format"}), 400
+    
+    if not is_valid_password(password):
+        return jsonify({"error": "Password must be at least 8 characters"}), 400
+    
+    if name and not is_valid_name(name):
+        return jsonify({"error": "Name must be at least 2 characters"}), 400
+    
     try:
+        password_hash = generate_password_hash(password, method='pbkdf2:sha256')
         with get_db() as conn:
-            conn.execute('INSERT INTO users (email, name, password) VALUES (?, ?, ?)',
-                         (email, name, password))
+            conn.execute('INSERT INTO users (email, name, password_hash) VALUES (?, ?, ?)',
+                         (email, name or None, password_hash))
             conn.commit()
         return jsonify({"message": "User created successfully"}), 201
     except sqlite3.IntegrityError:
         return jsonify({"error": "Email already exists"}), 400
+    except Exception as err:
+        print(err)
+        return jsonify({"error": "Database error"}), 500
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -55,14 +84,21 @@ def login():
     email = data.get('email')
     password = data.get('password')
     
-    with get_db() as conn:
-        user = conn.execute('SELECT * FROM users WHERE email = ? AND password = ?',
-                            (email, password)).fetchone()
+    if not email or not password:
+        return jsonify({"error": "Email and password are required"}), 400
     
-    if user:
-        return jsonify({"message": "Login successful", "user": dict(user)}), 200
-    else:
-        return jsonify({"error": "Invalid credentials"}), 401
+    try:
+        with get_db() as conn:
+            user = conn.execute('SELECT * FROM users WHERE email = ?',
+                                (email,)).fetchone()
+        
+        if user and check_password_hash(user['password_hash'], password):
+            return jsonify({"message": "Login successful", "user": {"id": user['id'], "name": user['name'], "email": user['email']}}), 200
+        else:
+            return jsonify({"error": "Invalid credentials"}), 401
+    except Exception as err:
+        print(err)
+        return jsonify({"error": "Database error"}), 500
 
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
@@ -145,4 +181,4 @@ def handle_message(data):
     emit('receive-chat-message', data, room=sid)
 
 if __name__ == '__main__':
-    socketio.run(app, host='0.0.0.0', port=3000, debug=True)
+    socketio.run(app, host='0.0.0.0', port=3000, debug=False)

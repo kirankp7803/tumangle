@@ -8,9 +8,13 @@ app = Flask(__name__, static_folder='dist')
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-DATABASE = 'database.sqlite'
+DATABASE = os.getenv('DB_PATH', 'database.sqlite')
 
 def get_db():
+    # Ensure directory exists if it's in a subfolder
+    db_dir = os.path.dirname(DATABASE)
+    if db_dir and not os.path.exists(db_dir):
+        os.makedirs(db_dir)
     conn = sqlite3.connect(DATABASE)
     conn.row_factory = sqlite3.Row
     return conn
@@ -70,31 +74,75 @@ def serve(path):
 
 # SocketIO Matchmaking Logic
 waiting_users = []
+active_matches = {} # sid -> partner_sid
+
+@socketio.on('connect')
+def handle_connect():
+    print(f"Client connected: {request.sid}")
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    global waiting_users
+    sid = request.sid
+    print(f"Client disconnected: {sid}")
+    
+    if sid in waiting_users:
+        waiting_users.remove(sid)
+    
+    if sid in active_matches:
+        partner_sid = active_matches[sid]
+        emit('partner-disconnected', room=partner_sid)
+        if partner_sid in active_matches:
+            del active_matches[partner_sid]
+        del active_matches[sid]
 
 @socketio.on('find-random-partner')
 def handle_find_partner(data):
     global waiting_users
-    gender = data.get('gender', 'both')
+    sid = request.sid
     
+    # If user was already in a match, leave it
+    if sid in active_matches:
+        handle_leave()
+
     if waiting_users:
         partner_sid = waiting_users.pop(0)
+        active_matches[sid] = partner_sid
+        active_matches[partner_sid] = sid
+        
         # Notify both users
-        emit('partner-found', {'partner': partner_sid}, room=request.sid)
-        emit('partner-found', {'partner': request.sid}, room=partner_sid)
+        emit('partner-found', {'partner': partner_sid}, room=sid)
+        emit('partner-found', {'partner': sid}, room=partner_sid)
     else:
-        waiting_users.append(request.sid)
+        if sid not in waiting_users:
+            waiting_users.append(sid)
         emit('searching', {'message': 'Waiting for a partner...'})
 
 @socketio.on('leave-chat')
 def handle_leave():
     global waiting_users
-    if request.sid in waiting_users:
-        waiting_users.remove(request.sid)
-    emit('disconnected', {'message': 'You left the chat'}, room=request.sid)
+    sid = request.sid
+    
+    if sid in waiting_users:
+        waiting_users.remove(sid)
+    
+    if sid in active_matches:
+        partner_sid = active_matches[sid]
+        emit('partner-disconnected', room=partner_sid)
+        if partner_sid in active_matches:
+            del active_matches[partner_sid]
+        del active_matches[sid]
+        
+    emit('disconnected', {'message': 'You left the chat'}, room=sid)
 
 @socketio.on('send-chat-message')
 def handle_message(data):
-    emit('receive-chat-message', data, broadcast=True) 
+    sid = request.sid
+    if sid in active_matches:
+        partner_sid = active_matches[sid]
+        emit('receive-chat-message', data, room=partner_sid)
+    # Also send back to self for confirmation (or let frontend handle it)
+    emit('receive-chat-message', data, room=sid)
 
 if __name__ == '__main__':
     socketio.run(app, host='0.0.0.0', port=3000, debug=True)

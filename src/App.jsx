@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
+import logoImg from './assets/logo.svg';
 
 // Initializing socket connection to local Python server
-const socket = io('/'); 
+const socket = io('/');
 
 
 const App = () => {
@@ -20,7 +21,7 @@ const App = () => {
   const [genderFilter, setGenderFilter] = useState('both');
   const [isAudioMuted, setIsAudioMuted] = useState(false);
   const [isVideoStopped, setIsVideoStopped] = useState(false);
-  
+
   const [messages, setMessages] = useState([{ text: "Welcome to Tumangle! Start chatting with the world.", sender: userName, isSelf: false }]);
   const [chatInput, setChatInput] = useState('');
 
@@ -57,9 +58,16 @@ const App = () => {
       addMessage("Partner disconnected.", "System");
     });
 
+    socket.on('receive-chat-message', (data) => {
+      if (data.sender !== userName) {
+        addMessage(data.text, data.sender, false);
+      }
+    });
+
     return () => {
       socket.off('partner-found');
       socket.off('partner-disconnected');
+      socket.off('receive-chat-message');
     };
   }, [screen]);
 
@@ -88,11 +96,33 @@ const App = () => {
     }
   }, [messages]);
 
-  const handleAuthSubmit = (e) => {
+  const handleAuthSubmit = async (e) => {
     e.preventDefault();
-    const finalName = signupName || 'TumangleUser' + Math.floor(Math.random() * 100);
-    setUserName(finalName);
-    setScreen('stream');
+    const endpoint = authMode === 'signup' ? '/signup' : '/login';
+    const payload = authMode === 'signup' 
+      ? { email, name: signupName, password } 
+      : { email, password };
+
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        const finalName = data.user?.name || signupName || email.split('@')[0];
+        setUserName(finalName);
+        setScreen('stream');
+      } else {
+        alert(data.error || "Authentication failed");
+      }
+    } catch (err) {
+      console.error("Auth error:", err);
+      alert("Could not connect to server");
+    }
   };
 
   // 2. The "Articy Trigger" Logic adapted for this app
@@ -138,7 +168,7 @@ const App = () => {
       <div id="auth-screen" className="screen active">
         <div className="auth-container glass">
           <div className="brand">
-            <h1 className="logo-text"><span className="brand-name">Tumangle</span><span className="dot">Live</span></h1>
+            <img src={logoImg} alt="Tumangle Logo" className="logo-img-large" />
             <p className="tagline">Connect with the world, instantly.</p>
           </div>
 
@@ -175,7 +205,9 @@ const App = () => {
   return (
     <div id="stream-screen" className="screen active">
       <header className="top-nav glass">
-        <div className="logo"><span className="brand-name">Tumangle</span><span className="dot">Live</span></div>
+        <div className="logo">
+          <img src={logoImg} alt="Tumangle Logo" className="logo-img-small" />
+        </div>
         <div className="nav-links">
           <div className="filter-group">
             <label>Find:</label>
@@ -226,13 +258,13 @@ const App = () => {
               <div className={`matching-overlay ${currentState === 'SEARCHING_NODE' ? 'active' : ''}`}>
                 <div className="loader-pulse"></div>
                 <h2>Searching for a partner...</h2>
-                <button 
-                  className="btn-secondary" 
+                <button
+                  className="btn-secondary"
                   style={{ marginTop: '20px', padding: '10px 30px', borderRadius: '30px' }}
                   onClick={handleCancelSearch}
-                 >
-                   Cancel Search
-                 </button>
+                >
+                  Cancel Search
+                </button>
               </div>
 
               {currentState === 'CONNECTED_NODE' && (
@@ -246,12 +278,12 @@ const App = () => {
             <div className="local-video-frame" style={{ display: localStream ? 'block' : 'none' }}>
               <video ref={localVideoRef} autoPlay playsInline muted style={{ opacity: isVideoStopped ? 0.3 : 1 }}></video>
               <div className="local-tag">You {isAudioMuted && '(Muted)'}</div>
-              
+
               {/* Media Controls */}
               <div className="local-media-controls">
-                <button 
-                  className={`media-btn ${isAudioMuted ? 'disabled' : ''}`} 
-                  onClick={toggleAudio} 
+                <button
+                  className={`media-btn ${isAudioMuted ? 'disabled' : ''}`}
+                  onClick={toggleAudio}
                   title={isAudioMuted ? "Unmute" : "Mute"}
                 >
                   {isAudioMuted ? (
@@ -260,9 +292,9 @@ const App = () => {
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
                   )}
                 </button>
-                <button 
-                  className={`media-btn ${isVideoStopped ? 'disabled' : ''}`} 
-                  onClick={toggleVideo} 
+                <button
+                  className={`media-btn ${isVideoStopped ? 'disabled' : ''}`}
+                  onClick={toggleVideo}
                   title={isVideoStopped ? "Start Video" : "Stop Video"}
                 >
                   {isVideoStopped ? (

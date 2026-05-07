@@ -6,8 +6,14 @@ export default defineConfig({
   server: {
     proxy: {
       '/socket.io': {
-        target: 'http://localhost:3002',
+        target: 'http://localhost:3000',
         ws: true,
+      },
+      '/signup': {
+        target: 'http://localhost:3000',
+      },
+      '/login': {
+        target: 'http://localhost:3000',
       },
     },
   },

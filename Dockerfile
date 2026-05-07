@@ -1,8 +1,12 @@
 # Stage 1: Build the React frontend
 FROM node:20-alpine AS frontend-builder
 WORKDIR /app
+
+# Install dependencies
 COPY package*.json ./
 RUN npm install
+
+# Copy source and build
 COPY . .
 RUN npm run build
 
@@ -10,7 +14,7 @@ RUN npm run build
 FROM python:3.13-slim
 WORKDIR /app
 
-# Install system dependencies if needed
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     sqlite3 \
     && rm -rf /var/lib/apt/lists/*
@@ -19,19 +23,23 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the Python backend file and database
+# Copy the Python backend file
 COPY app.py .
-# Note: In production, you might want to use a volume for database.sqlite
-# COPY database.sqlite . 
 
 # Copy the built frontend from Stage 1
 COPY --from=frontend-builder /app/dist ./dist
+
+# Create a data directory for the database
+RUN mkdir -p /app/data
 
 # Expose the application port
 EXPOSE 3000
 
 # Set environment variables
 ENV FLASK_ENV=production
+ENV PYTHONUNBUFFERED=1
+ENV DB_PATH=/app/data/database.sqlite
 
 # Start the Flask-SocketIO server
+# Note: eventlet is recommended for Flask-SocketIO
 CMD ["python", "app.py"]

@@ -48,7 +48,7 @@ function isValidName(name) {
 }
 
 // Route to handle signup
-app.post('/api/signup', (req, res) => {
+app.post('/api/signup', async (req, res) => {
   const { name, email, password } = req.body;
   
   if (!email || !password) {
@@ -68,7 +68,7 @@ app.post('/api/signup', (req, res) => {
   }
 
   try {
-    const hashedPassword = bcrypt.hashSync(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 10);
     const stmt = db.prepare('INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)');
     const info = stmt.run(name || null, email, hashedPassword); 
     res.status(201).json({ success: true, message: 'User created successfully', userId: info.lastInsertRowid });
@@ -83,7 +83,7 @@ app.post('/api/signup', (req, res) => {
 });
 
 // Route to handle login
-app.post('/api/login', (req, res) => {
+app.post('/api/login', async (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
@@ -94,7 +94,7 @@ app.post('/api/login', (req, res) => {
     const stmt = db.prepare('SELECT * FROM users WHERE email = ?');
     const user = stmt.get(email); 
 
-    if (user && bcrypt.compareSync(password, user.password_hash)) {
+    if (user && await bcrypt.compare(password, user.password_hash)) {
       res.status(200).json({ 
         success: true, 
         message: 'Login successful', 

@@ -3,6 +3,7 @@ import cors from 'cors';
 import Database from 'better-sqlite3';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import bcrypt from 'bcryptjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -27,10 +28,24 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT,
     email TEXT UNIQUE NOT NULL,
-    password TEXT NOT NULL,
+    password_hash TEXT NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )
 `);
+
+// Validation functions
+function isValidEmail(email) {
+  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return re.test(email);
+}
+
+function isValidPassword(password) {
+  return password && password.length >= 8;
+}
+
+function isValidName(name) {
+  return name && name.trim().length >= 2;
+}
 
 // Route to handle signup
 app.post('/api/signup', (req, res) => {
@@ -40,10 +55,22 @@ app.post('/api/signup', (req, res) => {
     return res.status(400).json({ error: 'Email and password are required' });
   }
 
+  if (!isValidEmail(email)) {
+    return res.status(400).json({ error: 'Invalid email format' });
+  }
+
+  if (!isValidPassword(password)) {
+    return res.status(400).json({ error: 'Password must be at least 8 characters' });
+  }
+
+  if (name && !isValidName(name)) {
+    return res.status(400).json({ error: 'Name must be at least 2 characters' });
+  }
+
   try {
-    // Note: In a real app, passwords should be hashed using bcrypt before storing!
-    const stmt = db.prepare('INSERT INTO users (name, email, password) VALUES (?, ?, ?)');
-    const info = stmt.run(name || null, email, password); 
+    const hashedPassword = bcrypt.hashSync(password, 10);
+    const stmt = db.prepare('INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)');
+    const info = stmt.run(name || null, email, hashedPassword); 
     res.status(201).json({ success: true, message: 'User created successfully', userId: info.lastInsertRowid });
   } catch (err) {
     if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') {
@@ -64,15 +91,14 @@ app.post('/api/login', (req, res) => {
   }
 
   try {
-    // Note: In a real app, compare hashed passwords!
-    const stmt = db.prepare('SELECT * FROM users WHERE email = ? AND password = ?');
-    const user = stmt.get(email, password); 
+    const stmt = db.prepare('SELECT * FROM users WHERE email = ?');
+    const user = stmt.get(email); 
 
-    if (user) {
+    if (user && bcrypt.compareSync(password, user.password_hash)) {
       res.status(200).json({ 
         success: true, 
         message: 'Login successful', 
-        user: { name: user.name, email: user.email } 
+        user: { id: user.id, name: user.name, email: user.email } 
       });
     } else {
       res.status(401).json({ error: 'Invalid email or password' });
@@ -83,22 +109,12 @@ app.post('/api/login', (req, res) => {
   }
 });
 
-// Route to view all users (Admin)
+// Route to view all users (Admin) - Returns JSON
 app.get('/api/users', (req, res) => {
   try {
     const stmt = db.prepare('SELECT id, name, email, created_at FROM users ORDER BY created_at DESC');
     const users = stmt.all();
-    
-    // We can return JSON or simple HTML
-    let html = '<h1>Registered Users</h1><table border="1" cellpadding="10" style="border-collapse: collapse;">';
-    html += '<tr><th>ID</th><th>Name</th><th>Email</th><th>Signed Up At</th></tr>';
-    
-    users.forEach(u => {
-      html += `<tr><td>${u.id}</td><td>${u.name || 'N/A'}</td><td>${u.email}</td><td>${u.created_at}</td></tr>`;
-    });
-    html += '</table>';
-
-    res.send(html);
+    res.json({ success: true, users });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Database error' });

@@ -43,7 +43,8 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Streaming Logic
-  const localVideo
+  const localVideo = document.getElementById('local-video');
+  const streamVideo = document.getElementById('stream-video');
   const loadingOverlay = document.getElementById('loading-overlay');
   const nextStreamBtn = document.getElementById('next-stream-btn');
   const goLiveBtn = document.getElementById('go-live-btn');
@@ -59,6 +60,14 @@ document.addEventListener('DOMContentLoaded', () => {
   let isLive = false;
   let simulatedChatInterval;
 
+  // Mock streaming data
+  const mockStreams = [
+    { title: 'Gaming Stream', streamer: 'ProGamer420', url: 'https://media-files.videezy.com/video/prep/2024/04/seo/0a54de20-seo-video-high(1080p).mp4' },
+    { title: 'Music Live', streamer: 'DJ Luna', url: 'https://media-files.videezy.com/video/prep/2024/04/seo/0a54de20-seo-video-high(1080p).mp4' },
+    { title: 'Coding Session', streamer: 'DevNinja', url: 'https://media-files.videezy.com/video/prep/2024/04/seo/0a54de20-seo-video-high(1080p).mp4' },
+    { title: 'Art Drawing', streamer: 'Artist Max', url: 'https://media-files.videezy.com/video/prep/2024/04/seo/0a54de20-seo-video-high(1080p).mp4' },
+    { title: 'Just Chatting', streamer: 'ChattyPete', url: 'https://media-files.videezy.com/video/prep/2024/04/seo/0a54de20-seo-video-high(1080p).mp4' }
+  ];
 
   function watchRandomStream() {
     isLive = false;

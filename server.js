@@ -73,7 +73,7 @@ app.post('/api/signup', async (req, res) => {
     const info = stmt.run(name || null, email, hashedPassword); 
     res.status(201).json({ success: true, message: 'User created successfully', userId: info.lastInsertRowid });
   } catch (err) {
-    if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+    if (err.message && err.message.includes('UNIQUE constraint failed')) {
       res.status(409).json({ error: 'Email already exists' });
     } else {
       console.error(err);

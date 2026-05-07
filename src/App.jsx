@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
-import logoImg from './assets/logo.svg';
+import logoImg from './assets/tumanglelogo.jpeg';
 
 // Initializing socket connection to local Python server
 const socket = io('/');

@@ -98,6 +98,24 @@ const App = () => {
 
   const handleAuthSubmit = async (e) => {
     e.preventDefault();
+    
+    // Basic Frontend Validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      alert("Please enter a valid email address.");
+      return;
+    }
+
+    if (password.length < 6) {
+      alert("Password must be at least 6 characters long.");
+      return;
+    }
+
+    if (authMode === 'signup' && !signupName.trim()) {
+      alert("Please enter a username.");
+      return;
+    }
+
     const endpoint = authMode === 'signup' ? '/signup' : '/login';
     const payload = authMode === 'signup' 
       ? { email, name: signupName, password } 

@@ -1,9 +1,9 @@
 import express from 'express';
 import cors from 'cors';
 import Database from 'better-sqlite3';
+import bcrypt from 'bcryptjs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import bcrypt from 'bcryptjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -51,8 +51,9 @@ function isValidName(name) {
 app.post('/api/signup', async (req, res) => {
   const { name, email, password } = req.body;
   
-  if (!email || !password) {
-    return res.status(400).json({ error: 'Email and password are required' });
+  // Input Validation
+  if (!email || !password || !name) {
+    return res.status(400).json({ error: 'Name, email, and password are required' });
   }
 
   if (!isValidEmail(email)) {
@@ -63,14 +64,16 @@ app.post('/api/signup', async (req, res) => {
     return res.status(400).json({ error: 'Password must be at least 8 characters' });
   }
 
-  if (name && !isValidName(name)) {
+  if (!isValidName(name)) {
     return res.status(400).json({ error: 'Name must be at least 2 characters' });
   }
 
   try {
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
     const stmt = db.prepare('INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)');
-    const info = stmt.run(name || null, email, hashedPassword); 
+    const info = stmt.run(name, email, hashedPassword); 
     res.status(201).json({ success: true, message: 'User created successfully', userId: info.lastInsertRowid });
   } catch (err) {
     if (err.message && err.message.includes('UNIQUE constraint failed')) {

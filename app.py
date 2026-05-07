@@ -53,8 +53,8 @@ def signup():
     name = data.get('name')
     password = data.get('password')
     
-    if not email or not password:
-        return jsonify({"error": "Email and password are required"}), 400
+    if not email or not password or not name:
+        return jsonify({"error": "All fields are required"}), 400
     
     if not is_valid_email(email):
         return jsonify({"error": "Invalid email format"}), 400
@@ -62,14 +62,14 @@ def signup():
     if not is_valid_password(password):
         return jsonify({"error": "Password must be at least 8 characters"}), 400
     
-    if name and not is_valid_name(name):
+    if not is_valid_name(name):
         return jsonify({"error": "Name must be at least 2 characters"}), 400
     
     try:
-        password_hash = generate_password_hash(password, method='pbkdf2:sha256')
+        password_hash = generate_password_hash(password)
         with get_db() as conn:
             conn.execute('INSERT INTO users (email, name, password_hash) VALUES (?, ?, ?)',
-                         (email, name or None, password_hash))
+                         (email, name, password_hash))
             conn.commit()
         return jsonify({"message": "User created successfully"}), 201
     except sqlite3.IntegrityError:
@@ -93,7 +93,10 @@ def login():
                                 (email,)).fetchone()
         
         if user and check_password_hash(user['password_hash'], password):
-            return jsonify({"message": "Login successful", "user": {"id": user['id'], "name": user['name'], "email": user['email']}}), 200
+            user_dict = dict(user)
+            if 'password_hash' in user_dict:
+                del user_dict['password_hash']
+            return jsonify({"message": "Login successful", "user": user_dict}), 200
         else:
             return jsonify({"error": "Invalid credentials"}), 401
     except Exception as err:

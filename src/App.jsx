@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
-import logoImg from './assets/tumanglelogo.jpeg';
+import logoImg from './assets/logo.jpeg';
 
 // Initializing socket connection to local Python server
 const socket = io('/');
@@ -21,6 +21,7 @@ const App = () => {
   const [genderFilter, setGenderFilter] = useState('both');
   const [isAudioMuted, setIsAudioMuted] = useState(false);
   const [isVideoStopped, setIsVideoStopped] = useState(false);
+  const [onlineCount, setOnlineCount] = useState(0);
 
   const [messages, setMessages] = useState([{ text: "Welcome to Tumangle! Start chatting with the world.", sender: userName, isSelf: false }]);
   const [chatInput, setChatInput] = useState('');
@@ -62,6 +63,10 @@ const App = () => {
       if (data.sender !== userName) {
         addMessage(data.text, data.sender, false);
       }
+    });
+    
+    socket.on('update-online-count', (data) => {
+      setOnlineCount(data.count);
     });
 
     return () => {
@@ -124,7 +129,10 @@ const App = () => {
     try {
       const response = await fetch(endpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-API-Key': import.meta.env.VITE_API_KEY
+        },
         body: JSON.stringify(payload),
       });
 
@@ -225,6 +233,10 @@ const App = () => {
       <header className="top-nav glass">
         <div className="logo">
           <img src={logoImg} alt="Tumangle Logo" className="logo-img-small" />
+          <div className="online-indicator">
+            <span className="pulse-dot"></span>
+            <span className="count-text">{onlineCount} Online</span>
+          </div>
         </div>
         <div className="nav-links">
           <div className="filter-group">

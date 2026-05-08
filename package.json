@@ -13,10 +13,6 @@
     "vite": "^8.0.10"
   },
   "dependencies": {
-    "bcryptjs": "^3.0.3",
-    "better-sqlite3": "^9.2.2",
-    "cors": "^2.8.6",
-    "express": "^5.2.1",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "socket.io-client": "^4.8.3"

@@ -2,15 +2,36 @@ from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit
 from werkzeug.security import generate_password_hash, check_password_hash
+from dotenv import load_dotenv
 import sqlite3
 import os
 import re
 
+load_dotenv()
+
 app = Flask(__name__, static_folder='dist')
+app.secret_key = os.getenv('SECRET_KEY', 'default-secret-key')
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 DATABASE = os.getenv('DB_PATH', 'database.sqlite')
+API_KEY = os.getenv('API_KEY')
+print(f"DEBUG: Loaded API_KEY: {API_KEY}")
+
+def require_api_key(f):
+    from functools import wraps
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not API_KEY:
+            return f(*args, **kwargs) # Skip if not configured
+        
+        request_key = request.headers.get('X-API-Key')
+        if request_key == API_KEY:
+            return f(*args, **kwargs)
+        else:
+            return jsonify({"error": "Invalid or missing API Key"}), 403
+    return decorated_function
+
 
 def get_db():
     # Ensure directory exists if it's in a subfolder
@@ -47,6 +68,7 @@ def is_valid_name(name):
 init_db()
 
 @app.route('/signup', methods=['POST'])
+@require_api_key
 def signup():
     data = request.json
     email = data.get('email')
@@ -72,13 +94,14 @@ def signup():
                          (email, name, password_hash))
             conn.commit()
         return jsonify({"message": "User created successfully"}), 201
-    except sqlite3.IntegrityError:
-        return jsonify({"error": "Email already exists"}), 400
+    except sqlite3.IntegrityError as e:
+        return jsonify({"error": f"Database integrity error: {str(e)}"}), 400
     except Exception as err:
         print(err)
-        return jsonify({"error": "Database error"}), 500
+        return jsonify({"error": str(err)}), 500
 
 @app.route('/login', methods=['POST'])
+@require_api_key
 def login():
     data = request.json
     email = data.get('email')
@@ -114,16 +137,22 @@ def serve(path):
 # SocketIO Matchmaking Logic
 waiting_users = []
 active_matches = {} # sid -> partner_sid
+online_count = 0
 
 @socketio.on('connect')
 def handle_connect():
-    print(f"Client connected: {request.sid}")
+    global online_count
+    online_count += 1
+    print(f"Client connected: {request.sid}. Online: {online_count}")
+    emit('update-online-count', {'count': online_count}, broadcast=True)
 
 @socketio.on('disconnect')
 def handle_disconnect():
-    global waiting_users
+    global waiting_users, online_count
     sid = request.sid
-    print(f"Client disconnected: {sid}")
+    online_count -= 1
+    print(f"Client disconnected: {sid}. Online: {online_count}")
+    emit('update-online-count', {'count': online_count}, broadcast=True)
     
     if sid in waiting_users:
         waiting_users.remove(sid)
@@ -180,8 +209,15 @@ def handle_message(data):
     if sid in active_matches:
         partner_sid = active_matches[sid]
         emit('receive-chat-message', data, room=partner_sid)
-    # Also send back to self for confirmation (or let frontend handle it)
+    # Also send back to self for confirmation
     emit('receive-chat-message', data, room=sid)
 
+@socketio.on('signal-partner')
+def handle_signal(data):
+    sid = request.sid
+    if sid in active_matches:
+        partner_sid = active_matches[sid]
+        emit('signal-partner', data, room=partner_sid)
+
 if __name__ == '__main__':
-    socketio.run(app, host='0.0.0.0', port=3000, debug=False)
+    socketio.run(app, host='0.0.0.0', port=3001, debug=False)

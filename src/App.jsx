@@ -73,6 +73,7 @@ const App = () => {
       socket.off('partner-found');
       socket.off('partner-disconnected');
       socket.off('receive-chat-message');
+      socket.off('update-online-count');
     };
   }, [screen]);
 

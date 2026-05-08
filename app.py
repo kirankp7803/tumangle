@@ -161,8 +161,8 @@ def handle_disconnect():
         partner_sid = active_matches[sid]
         emit('partner-disconnected', room=partner_sid)
         if partner_sid in active_matches:
-            del active_matches[partner_sid]
-        del active_matches[sid]
+            active_matches.pop(partner_sid, None)
+        active_matches.pop(sid, None)
 
 @socketio.on('find-random-partner')
 def handle_find_partner(data):
@@ -198,8 +198,8 @@ def handle_leave():
         partner_sid = active_matches[sid]
         emit('partner-disconnected', room=partner_sid)
         if partner_sid in active_matches:
-            del active_matches[partner_sid]
-        del active_matches[sid]
+            active_matches.pop(partner_sid, None)
+        active_matches.pop(sid, None)
         
     emit('disconnected', {'message': 'You left the chat'}, room=sid)
 

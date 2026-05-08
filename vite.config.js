@@ -15,6 +15,15 @@ export default defineConfig({
       '/login': {
         target: 'http://127.0.0.1:3001',
       },
+      '/update-profile': {
+        target: 'http://127.0.0.1:3001',
+      },
+      '/upload-avatar': {
+        target: 'http://127.0.0.1:3001',
+      },
+      '/uploads': {
+        target: 'http://127.0.0.1:3001',
+      },
     },
   },
 })

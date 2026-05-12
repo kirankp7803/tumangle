@@ -5,7 +5,7 @@ services:
     build: .
     container_name: tumangle-server
     ports:
-      - "3001:3001"
+      - "8000:8000"
     environment:
       - FLASK_ENV=production
       - PYTHONUNBUFFERED=1

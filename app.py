@@ -13,7 +13,7 @@ load_dotenv()
 
 app = Flask(__name__, static_folder='dist')
 app.secret_key = os.getenv('SECRET_KEY', 'default-secret-key')
-CORS(app, origins=["https://tumangle.vercel.app", "http://localhost:5173", "http://localhost:3000"], supports_credentials=True)
+CORS(app, origins=r"https?://(localhost:\d+|127\.0\.0\.1:\d+|tumangle\.site|tumangle\.vercel\.app)", supports_credentials=True)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 UPLOAD_FOLDER = 'uploads/avatars'

@@ -33,7 +33,7 @@ COPY --from=frontend-builder /app/dist ./dist
 RUN mkdir -p /app/data
 
 # Expose the application port
-EXPOSE 8000
+EXPOSE 8001
 
 # Set environment variables
 ENV FLASK_ENV=production

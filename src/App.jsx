@@ -2,8 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
 import logoImg from './assets/logo.jpeg';
 
-// Initializing socket connection
-const socket = io('/');
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || '';
+const socket = io(BACKEND_URL || '/');
 
 const App = () => {
   const [screen, setScreen] = useState('auth'); // auth, profile-setup, stream, profile-edit
@@ -239,7 +239,7 @@ const App = () => {
       : { email, password };
 
     try {
-      const response = await fetch(endpoint, {
+      const response = await fetch(`${BACKEND_URL}${endpoint}`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -288,7 +288,7 @@ const App = () => {
     }
 
     try {
-      const response = await fetch('/update-profile', {
+      const response = await fetch(`${BACKEND_URL}/update-profile`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -321,7 +321,7 @@ const App = () => {
     formData.append('avatar', file);
 
     try {
-      const response = await fetch('/upload-avatar', {
+      const response = await fetch(`${BACKEND_URL}/upload-avatar`, {
         method: 'POST',
         headers: { 
           'X-API-Key': import.meta.env.VITE_API_KEY

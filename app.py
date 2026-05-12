@@ -134,6 +134,9 @@ def login():
             user = conn.execute('SELECT * FROM users WHERE email = ?',
                                 (email,)).fetchone()
         
+        print(f"Login attempt for: {email}")
+        print(f"Found user in DB: {user['email'] if user else 'None'}")
+        
         if user and check_password_hash(user['password_hash'], password):
             user_dict = dict(user)
             if 'password_hash' in user_dict:

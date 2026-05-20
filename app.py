@@ -27,22 +27,6 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 DATABASE = os.getenv('DB_PATH', 'database.sqlite')
-API_KEY = os.getenv('API_KEY')
-print(f"DEBUG: Loaded API_KEY: {API_KEY}")
-
-def require_api_key(f):
-    from functools import wraps
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if not API_KEY:
-            return f(*args, **kwargs) # Skip if not configured
-        
-        request_key = request.headers.get('X-API-Key')
-        if request_key == API_KEY:
-            return f(*args, **kwargs)
-        else:
-            return jsonify({"error": "Invalid or missing API Key"}), 403
-    return decorated_function
 
 
 def get_db():

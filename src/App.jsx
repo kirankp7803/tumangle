@@ -247,7 +247,6 @@ const App = () => {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'X-API-Key': import.meta.env.VITE_API_KEY,
           'Bypass-Tunnel-Reminder': 'true'
         },
         body: JSON.stringify(payload),
@@ -297,7 +296,6 @@ const App = () => {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'X-API-Key': import.meta.env.VITE_API_KEY,
           'Bypass-Tunnel-Reminder': 'true'
         },
         body: JSON.stringify(payload),
@@ -330,7 +328,6 @@ const App = () => {
       const response = await fetch(`${BACKEND_URL}/upload-avatar`, {
         method: 'POST',
         headers: { 
-          'X-API-Key': import.meta.env.VITE_API_KEY,
           'Bypass-Tunnel-Reminder': 'true'
         },
         body: formData,

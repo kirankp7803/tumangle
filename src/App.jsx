@@ -35,7 +35,7 @@ const App = () => {
   const [isVideoStopped, setIsVideoStopped] = useState(false);
   const [onlineCount, setOnlineCount] = useState(0);
 
-  const [messages, setMessages] = useState([{ text: "Welcome to Tumangle! Start chatting with the world.", sender: 'System', isSelf: false }]);
+  const [messages, setMessages] = useState([{ text: "Welcome to Tumangle! Start chatting with the world.", sender: 'User', isSelf: false }]);
   const [chatInput, setChatInput] = useState('');
 
   const localVideoRef = useRef(null);
@@ -90,7 +90,7 @@ const App = () => {
     socket.on('partner-found', async (data) => {
       console.log('Partner found:', data);
       setCurrentState('CONNECTED_NODE');
-      addMessage("Connected to a new partner!", "System");
+      addMessage("Connected to a new partner!", "User");
     });
 
     socket.on('signal-partner', async (data) => {
@@ -109,7 +109,7 @@ const App = () => {
       closePeerConnection();
       setRemoteStream(null);
       setCurrentState('SEARCHING_NODE');
-      addMessage("Partner disconnected.", "System");
+      addMessage("Partner disconnected.", "User");
       handleNext();
     });
 
@@ -377,7 +377,7 @@ const App = () => {
     });
 
     socket.emit('find-random-partner', { gender: genderFilter });
-    addMessage("Searching for a new partner...", "System");
+    addMessage("Searching for a new partner...", "User");
   };
 
   const endCall = () => {
@@ -385,13 +385,13 @@ const App = () => {
     closePeerConnection();
     setRemoteStream(null);
     setCurrentState('START_NODE');
-    addMessage("Call ended.", "System");
+    addMessage("Call ended.", "User");
   };
 
   const handleCancelSearch = () => {
     socket.emit('leave-chat');
     setCurrentState('START_NODE');
-    addMessage("Search cancelled.", "System");
+    addMessage("Search cancelled.", "User");
   };
 
   const addMessage = (text, sender, isSelf = false) => {

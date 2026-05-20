@@ -2,8 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
 import logoImg from './assets/logo.jpeg';
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || '';
-const socket = io(BACKEND_URL || '/');
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://tumangle.site';
+const socket = io(BACKEND_URL);
 
 const App = () => {
   const [screen, setScreen] = useState('auth'); // auth, profile-setup, stream, profile-edit

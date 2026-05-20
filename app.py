@@ -83,9 +83,8 @@ def is_valid_name(name):
 init_db()
 
 @app.route('/signup', methods=['POST'])
-@require_api_key
 def signup():
-    data = request.json
+    data = request.json or {}
     email = data.get('email')
     name = data.get('name')
     password = data.get('password')
@@ -120,9 +119,8 @@ def signup():
         return jsonify({"error": str(err)}), 500
 
 @app.route('/login', methods=['POST'])
-@require_api_key
 def login():
-    data = request.json
+    data = request.json or {}
     email = data.get('email')
     password = data.get('password')
     
@@ -149,9 +147,8 @@ def login():
         return jsonify({"error": "Database error"}), 500
 
 @app.route('/update-profile', methods=['POST'])
-@require_api_key
 def update_profile():
-    data = request.json
+    data = request.json or {}
     user_id = data.get('id')
     name = data.get('name')
     email = data.get('email')
@@ -210,7 +207,6 @@ def update_profile():
         return jsonify({"error": str(err)}), 500
 
 @app.route('/upload-avatar', methods=['POST'])
-@require_api_key
 def upload_avatar():
     if 'avatar' not in request.files:
         return jsonify({"error": "No file part"}), 400

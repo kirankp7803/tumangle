@@ -1,6 +1,11 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
+// Expose Vercel's deployment URL to the client-side code
+if (process.env.VERCEL_URL) {
+  process.env.VITE_VERCEL_URL = process.env.VERCEL_URL;
+}
+
 export default defineConfig({
   plugins: [react()],
   server: {

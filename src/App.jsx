@@ -3,7 +3,11 @@ import io from 'socket.io-client';
 import logoImg from './assets/logo.jpeg';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://large-rings-itch.loca.lt';
-const socket = io(BACKEND_URL);
+const socket = io(BACKEND_URL, {
+  extraHeaders: {
+    'Bypass-Tunnel-Reminder': 'true'
+  }
+});
 
 const App = () => {
   const [screen, setScreen] = useState('auth'); // auth, profile-setup, stream, profile-edit
@@ -243,7 +247,8 @@ const App = () => {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'X-API-Key': import.meta.env.VITE_API_KEY
+          'X-API-Key': import.meta.env.VITE_API_KEY,
+          'Bypass-Tunnel-Reminder': 'true'
         },
         body: JSON.stringify(payload),
       });
@@ -292,7 +297,8 @@ const App = () => {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'X-API-Key': import.meta.env.VITE_API_KEY
+          'X-API-Key': import.meta.env.VITE_API_KEY,
+          'Bypass-Tunnel-Reminder': 'true'
         },
         body: JSON.stringify(payload),
       });
@@ -324,7 +330,8 @@ const App = () => {
       const response = await fetch(`${BACKEND_URL}/upload-avatar`, {
         method: 'POST',
         headers: { 
-          'X-API-Key': import.meta.env.VITE_API_KEY
+          'X-API-Key': import.meta.env.VITE_API_KEY,
+          'Bypass-Tunnel-Reminder': 'true'
         },
         body: formData,
       });

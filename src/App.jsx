@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
 import logoImg from './assets/logo.jpeg';
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://tumangle.site';
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://large-rings-itch.loca.lt';
 const socket = io(BACKEND_URL);
 
 const App = () => {

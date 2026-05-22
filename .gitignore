@@ -3,6 +3,7 @@
 database.sqlite
 venv/
 scratch/
+node/
 
 # Logs
 logs

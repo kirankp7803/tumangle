@@ -96,8 +96,8 @@ def signup():
             user = conn.execute('SELECT id, email, name FROM users WHERE email = ?', (email,)).fetchone()
             
         return jsonify({"message": "User created successfully", "user": dict(user)}), 201
-    except sqlite3.IntegrityError as e:
-        return jsonify({"error": f"Database integrity error: {str(e)}"}), 400
+    except sqlite3.IntegrityError:
+        return jsonify({"error": "Email is already registered"}), 400
     except Exception as err:
         print(err)
         return jsonify({"error": str(err)}), 500
